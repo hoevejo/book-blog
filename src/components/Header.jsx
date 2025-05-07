@@ -1,11 +1,10 @@
-import React from "react";
-import { useState, useRef, useEffect } from "react";
-import { useUser } from "../context/UserContext";
+import React, { useEffect, useRef, useState } from "react";
+import { useUser } from "../hooks/useUsers";
 import { auth } from "../utils/firebaseConfig";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
-export default function Header() {
+export default function Header({ onToggleSidebar }) {
     const { userProfile } = useUser();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
@@ -29,21 +28,33 @@ export default function Header() {
     }, []);
 
     return (
-        <header className="w-full bg-white shadow-md px-4 py-3 flex items-center justify-between relative">
-            {/* Logo + Title */}
-            <div
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => navigate("/")}
-            >
-                <img
-                    src="/book-logo.svg"
-                    alt="Book Blog Logo"
-                    className="w-8 h-8"
-                />
-                <h1 className="text-xl font-bold text-gray-800">Bookaholic Anonymous</h1>
+        <header className="w-full bg-white shadow-md px-4 py-3 flex items-center justify-between relative z-50">
+            {/* Left side: Sidebar toggle + Logo */}
+            <div className="flex items-center gap-3">
+                {/* Sidebar toggle (visible on md and up) */}
+                <button
+                    className="hidden md:inline-block text-gray-600 hover:text-indigo-600"
+                    onClick={onToggleSidebar}
+                    title="Toggle sidebar"
+                >
+                    ☰
+                </button>
+
+                {/* Logo + Site Name */}
+                <div
+                    className="flex items-center gap-2 cursor-pointer"
+                    onClick={() => navigate("/")}
+                >
+                    <img
+                        src="/book-logo.svg"
+                        alt="Book Blog Logo"
+                        className="w-8 h-8"
+                    />
+                    <h1 className="text-xl font-bold text-gray-800">Bookaholic Anonymous</h1>
+                </div>
             </div>
 
-            {/* Right side: Logged In or Not */}
+            {/* Right side: User profile or Sign In */}
             {userProfile ? (
                 <div className="relative" ref={menuRef}>
                     <button

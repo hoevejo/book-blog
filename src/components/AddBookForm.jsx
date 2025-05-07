@@ -266,7 +266,7 @@ export default function AddBookForm() {
                         </select>
                     </div>
 
-                    {(status === "in-progress" || status === "completed") && (
+                    {(status === "completed") && (
                         <>
                             <div>
                                 <label className="block font-medium">Rating</label>

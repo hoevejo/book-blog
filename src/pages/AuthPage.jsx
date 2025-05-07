@@ -7,13 +7,14 @@ import {
     signInWithPopup,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import bgImage from "../assets/images/book-background.png"; // ✅ Import your background image
 
 export default function AuthPage() {
     const [isRegister, setIsRegister] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [displayName, setDisplayName] = useState("");
-    const navigate = useNavigate(); // ✅ Add this
+    const navigate = useNavigate();
 
     const handleEmailAuth = async () => {
         try {
@@ -41,7 +42,7 @@ export default function AuthPage() {
             }
 
             console.log("Email auth success:", userCredential.user);
-            navigate("/"); // ✅ Redirect after success
+            navigate("/");
         } catch (err) {
             console.error("Auth error:", err.message);
             alert(err.message);
@@ -67,15 +68,18 @@ export default function AuthPage() {
             }
 
             console.log("Google login success:", user);
-            navigate("/"); // ✅ Redirect after Google login
+            navigate("/");
         } catch (err) {
             console.error("Google login error:", err.message);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
+        <div
+            className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat px-4"
+            style={{ backgroundImage: `url(${bgImage})` }}
+        >
+            <div className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-semibold text-center mb-6">
                     {isRegister ? "Create Account" : "Login"}
                 </h2>

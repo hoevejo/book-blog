@@ -1,34 +1,37 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import { auth, db } from "../utils/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
-const UserContext = createContext();
-export const useUser = () => useContext(UserContext);
+export const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ Add loading state
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserProfile = async (uid) => {
+    const docRef = doc(db, "users", uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const userData = { uid, ...docSnap.data() };
+      localStorage.setItem("bookblog_user", JSON.stringify(userData));
+      setUserProfile(userData);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Try localStorage
+        // Try localStorage first
         const cached = localStorage.getItem("bookblog_user");
         if (cached) {
           setUserProfile(JSON.parse(cached));
           setLoading(false);
+          // Also re-fetch in background
+          fetchUserProfile(user.uid);
           return;
         }
-
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const userData = { uid: user.uid, ...docSnap.data() };
-          localStorage.setItem("bookblog_user", JSON.stringify(userData));
-          setUserProfile(userData);
-        }
+        await fetchUserProfile(user.uid);
       } else {
         setUserProfile(null);
         localStorage.removeItem("bookblog_user");
@@ -40,7 +43,7 @@ export function UserProvider({ children }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ userProfile, setUserProfile, loading }}>
+    <UserContext.Provider value={{ userProfile, fetchUserProfile, setUserProfile, loading }}>
       {children}
     </UserContext.Provider>
   );
