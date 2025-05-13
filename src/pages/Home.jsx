@@ -7,21 +7,18 @@ import {
     getDocs,
     query,
     orderBy,
-    limit
+    limit,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import AddBookForm from "../components/AddBookForm";
 import BookCard from "../components/PrivateBookCard";
 
-
-
 export default function Home() {
     const { userProfile } = useUser();
     const [books, setBooks] = useState([]);
     const [journalEntry, setJournalEntry] = useState(null);
     const [showModal, setShowModal] = useState(false);
-
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -30,7 +27,7 @@ export default function Home() {
         const fetchBooks = async () => {
             const booksRef = collection(db, "users", userProfile.uid, "books");
             const bookSnap = await getDocs(booksRef);
-            const allBooks = bookSnap.docs.map(doc => doc.data());
+            const allBooks = bookSnap.docs.map((doc) => doc.data());
             setBooks(allBooks);
         };
 
@@ -60,10 +57,12 @@ export default function Home() {
         .slice(0, 5);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4">
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto space-y-8">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-3xl font-bold text-gray-800">Welcome Back, {userProfile?.displayName}!</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                        Welcome Back, {userProfile?.displayName}!
+                    </h2>
                     <button
                         onClick={() => setShowModal(true)}
                         className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm"
@@ -74,22 +73,10 @@ export default function Home() {
 
                 {/* Stats */}
                 <section className="bg-white rounded-lg shadow p-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-                    <div>
-                        <h3 className="text-xl font-bold text-indigo-600">{toRead}</h3>
-                        <p className="text-sm text-gray-600">To Read</p>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-indigo-600">{inProgress}</h3>
-                        <p className="text-sm text-gray-600">In Progress</p>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-indigo-600">{completed}</h3>
-                        <p className="text-sm text-gray-600">Completed</p>
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-indigo-600">{totalBooks}</h3>
-                        <p className="text-sm text-gray-600">Total Books</p>
-                    </div>
+                    <StatCard label="To Read" count={toRead} />
+                    <StatCard label="In Progress" count={inProgress} />
+                    <StatCard label="Completed" count={completed} />
+                    <StatCard label="Total Books" count={totalBooks} />
                 </section>
 
                 {/* Reading Challenge */}
@@ -109,13 +96,20 @@ export default function Home() {
                             View Library
                         </button>
                     </div>
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                        {recentBooks.map((book, idx) => (
-                            <div key={idx} className="flex-shrink-0">
-                                <BookCard book={book} onClick={() => navigate(`/library`)} />
-                            </div>
-                        ))}
-                    </div>
+                    {recentBooks.length > 0 ? (
+                        <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2">
+                            {recentBooks.map((book, idx) => (
+                                <div key={idx} className="flex-shrink-0 w-40">
+                                    <BookCard
+                                        book={book}
+                                        onClick={() => navigate("/library")}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500 italic">No books added yet.</p>
+                    )}
                 </section>
 
                 {/* Journal Preview */}
@@ -149,9 +143,20 @@ export default function Home() {
                     )}
                 </section>
             </div>
+
+            {/* Add Book Modal */}
             <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-                <AddBookForm />
+                <AddBookForm onBookAdded={() => setShowModal(false)} />
             </Modal>
+        </div>
+    );
+}
+
+function StatCard({ label, count }) {
+    return (
+        <div>
+            <h3 className="text-xl font-bold text-indigo-600">{count}</h3>
+            <p className="text-sm text-gray-600">{label}</p>
         </div>
     );
 }

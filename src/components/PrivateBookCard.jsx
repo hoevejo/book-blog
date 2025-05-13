@@ -26,6 +26,18 @@ export default function PrivateBookCard({
         (location.pathname.startsWith("/library") ||
             location.pathname.startsWith("/library/category"));
 
+    const formatStatus = (status) =>
+        status.replace("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const statusColorClass =
+        status === "to-read"
+            ? "bg-yellow-100 text-yellow-800"
+            : status === "in-progress"
+                ? "bg-blue-100 text-blue-800"
+                : status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-200 text-gray-700";
+
     return (
         <div
             onClick={(e) => {
@@ -69,9 +81,13 @@ export default function PrivateBookCard({
                 <div className="bg-black/60 backdrop-blur-sm rounded-md px-2 py-1 text-white text-sm">
                     <h3 className="font-semibold truncate">{title}</h3>
                     <p className="text-xs truncate">by {author}</p>
-                    <p className="text-xs mt-1">Status: {status}</p>
+                    <span
+                        className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColorClass}`}
+                    >
+                        {formatStatus(status)}
+                    </span>
                     {status === "completed" && rating && (
-                        <p className="text-xs">Rating: {rating} / 5</p>
+                        <p className="text-xs mt-1">Rating: {rating} / 5</p>
                     )}
                 </div>
             </div>

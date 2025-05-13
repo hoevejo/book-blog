@@ -1,4 +1,3 @@
-// AddBookForm.jsx
 import { useState, useEffect } from "react";
 import { db, auth } from "../utils/firebaseConfig";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -15,7 +14,6 @@ export default function AddBookForm() {
     const [selectedBook, setSelectedBook] = useState(null);
     const [status, setStatus] = useState("to-read");
     const [rating, setRating] = useState(0);
-    const [review, setReview] = useState("");
     const [isPublic, setIsPublic] = useState(true);
     const [resultLimit, setResultLimit] = useState(5);
     const [loading, setLoading] = useState(false);
@@ -61,9 +59,7 @@ export default function AddBookForm() {
                             typeof workData.description === "string"
                                 ? workData.description
                                 : workData.description?.value || description;
-                    } catch {
-                        console.log("Failed to fetch work description");
-                    }
+                    } catch { /* empty */ }
                 }
 
                 const book = {
@@ -77,8 +73,7 @@ export default function AddBookForm() {
                 };
 
                 setSearchResults([book]);
-            } catch (err) {
-                console.warn("ISBN search failed:", err);
+            } catch {
                 toast.error("No book found for that ISBN.");
             }
         } else {
@@ -112,9 +107,7 @@ export default function AddBookForm() {
                                     ? workData.description
                                     : workData.description?.value || description;
                         }
-                    } catch (err) {
-                        console.warn("Failed to fetch work details:", err);
-                    }
+                    } catch { /* empty */ }
 
                     return {
                         id: b.key.replace("/works/", ""),
@@ -169,7 +162,6 @@ export default function AddBookForm() {
                 ...selectedBook,
                 status,
                 rating,
-                review,
                 isPublic,
                 addedAt: serverTimestamp(),
             });
@@ -179,7 +171,6 @@ export default function AddBookForm() {
             setQuery("");
             setSearchResults([]);
             setRating(0);
-            setReview("");
             setIsPublic(true);
             setStatus("to-read");
         } catch (error) {
@@ -191,7 +182,7 @@ export default function AddBookForm() {
     const ratingLabels = ["Terrible", "Poor", "Okay", "Good", "Excellent"];
 
     return (
-        <div className="max-w-lg mx-auto p-4 bg-white rounded shadow">
+        <div className="w-full max-w-xl mx-auto px-4 py-6 bg-white rounded-lg shadow">
             {!selectedBook ? (
                 <>
                     <select
@@ -241,9 +232,13 @@ export default function AddBookForm() {
                 </>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         {selectedBook.cover && (
-                            <img src={selectedBook.cover} alt={selectedBook.title} className="w-20 h-28 object-cover rounded" />
+                            <img
+                                src={selectedBook.cover}
+                                alt={selectedBook.title}
+                                className="w-24 h-36 object-cover rounded self-center"
+                            />
                         )}
                         <div>
                             <h2 className="text-lg font-bold">{selectedBook.title}</h2>
@@ -266,38 +261,26 @@ export default function AddBookForm() {
                         </select>
                     </div>
 
-                    {(status === "completed") && (
-                        <>
-                            <div>
-                                <label className="block font-medium">Rating</label>
-                                <div className="flex items-center gap-2">
-                                    <Rating
-                                        fractions={2}
-                                        initialRating={rating}
-                                        onChange={(value) => setRating(value)}
-                                        emptySymbol={<FaRegStar className="text-2xl text-gray-300" />}
-                                        fullSymbol={<FaStar className="text-2xl text-yellow-500" />}
-                                        placeholderSymbol={<FaStarHalfAlt className="text-2xl text-yellow-400" />}
-                                    />
-                                    <span className="text-sm text-gray-600">{rating}/5</span>
-                                </div>
-                                {rating > 0 && (
-                                    <p className="text-xs text-gray-500 italic">
-                                        {ratingLabels[Math.floor(rating) - 1] || ""}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block font-medium">Review</label>
-                                <textarea
-                                    className="w-full border px-3 py-2 rounded"
-                                    rows="4"
-                                    value={review}
-                                    onChange={(e) => setReview(e.target.value)}
+                    {status === "completed" && (
+                        <div>
+                            <label className="block font-medium mb-1">Rating</label>
+                            <div className="flex items-center gap-2">
+                                <Rating
+                                    fractions={2}
+                                    initialRating={rating}
+                                    onChange={(value) => setRating(value)}
+                                    emptySymbol={<FaRegStar className="text-2xl text-gray-300" />}
+                                    fullSymbol={<FaStar className="text-2xl text-yellow-500" />}
+                                    placeholderSymbol={<FaStarHalfAlt className="text-2xl text-yellow-400" />}
                                 />
+                                <span className="text-sm text-gray-600">{rating}/5</span>
                             </div>
-                        </>
+                            {rating > 0 && (
+                                <p className="text-xs text-gray-500 italic mt-1">
+                                    {ratingLabels[Math.floor(rating) - 1] || ""}
+                                </p>
+                            )}
+                        </div>
                     )}
 
                     <div className="flex items-center gap-2">

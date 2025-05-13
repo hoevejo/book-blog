@@ -86,19 +86,27 @@ export default function JournalPage() {
         }
     };
 
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+    }, [showModal]);
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4 relative">
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4">
             <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
-                <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">My Journal</h1>
+                <h1 className="text-2xl font-bold mb-6 text-gray-800 text-center">📝 My Journal</h1>
 
                 {entries.length > 0 && (
-                    <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                    <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
                         <input
                             type="text"
                             placeholder="Search journal..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full md:w-1/2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-indigo-300"
+                            className="w-full sm:w-1/2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-indigo-300"
                         />
                         <input
                             type="date"
@@ -128,10 +136,7 @@ export default function JournalPage() {
                             })
                             .map((entry) =>
                                 editingId === entry.id ? (
-                                    <li
-                                        key={entry.id}
-                                        className="bg-amber-50 border border-amber-100 rounded-md p-4 shadow-sm"
-                                    >
+                                    <li key={entry.id} className="bg-amber-50 border rounded-md p-4 shadow-sm">
                                         <input
                                             className="w-full mb-2 px-3 py-2 border rounded-md"
                                             value={editingContent.title}
@@ -168,10 +173,7 @@ export default function JournalPage() {
                                         </div>
                                     </li>
                                 ) : (
-                                    <li
-                                        key={entry.id}
-                                        className="bg-amber-50 border border-amber-100 rounded-md p-4 shadow-sm"
-                                    >
+                                    <li key={entry.id} className="bg-amber-50 border rounded-md p-4 shadow-sm">
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h2 className="text-lg font-semibold text-gray-800">{entry.title}</h2>
@@ -208,7 +210,7 @@ export default function JournalPage() {
                 )}
             </div>
 
-            {/* Floating + Button */}
+            {/* Floating Add Button */}
             <button
                 onClick={() => setShowModal(true)}
                 className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg"
@@ -217,23 +219,28 @@ export default function JournalPage() {
                 <FaPlus />
             </button>
 
-            {/* Add Entry Modal */}
+            {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-4">
+                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-auto">
                         <h2 className="text-xl font-bold mb-4 text-center">New Journal Entry</h2>
                         <form onSubmit={handleAddEntry} className="space-y-4">
                             <input
                                 type="text"
                                 placeholder="Title"
                                 value={newEntry.title}
-                                onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
+                                onChange={(e) =>
+                                    setNewEntry({ ...newEntry, title: e.target.value })
+                                }
                                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-indigo-300"
+                                autoFocus
                             />
                             <textarea
                                 placeholder="Write your thoughts..."
                                 value={newEntry.content}
-                                onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
+                                onChange={(e) =>
+                                    setNewEntry({ ...newEntry, content: e.target.value })
+                                }
                                 className="w-full h-32 px-4 py-2 border rounded-md resize-none focus:outline-none focus:ring focus:ring-indigo-300"
                             />
                             <div className="flex justify-end gap-2">

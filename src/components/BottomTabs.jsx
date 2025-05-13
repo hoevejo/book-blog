@@ -1,14 +1,23 @@
 // BottomTabs.jsx
 import { NavLink } from "react-router-dom";
-import { FaBookOpen, FaCompass, FaFolderOpen, FaPenFancy, FaPlusCircle } from "react-icons/fa";
+import {
+    FaHome,
+    FaCompass,
+    FaFolderOpen,
+    FaPenFancy,
+    FaPlusCircle,
+    FaNewspaper
+} from "react-icons/fa";
 
 export default function BottomTabs({ onAddBookClick }) {
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-sm z-50 flex justify-around items-center py-2">
-            <TabLink to="/home" icon={<FaBookOpen />} label="Feed" />
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-sm z-50 flex justify-around items-center py-2 sm:hidden">
+            <TabLink to="/home" icon={<FaHome />} label="Home" />
             <TabLink to="/discover" icon={<FaCompass />} label="Discover" />
-            <TabLink to="/library" icon={<FaFolderOpen />} label="Collections" />
+            <TabLink to="/library" icon={<FaFolderOpen />} label="Library" />
             <TabLink to="/journal" icon={<FaPenFancy />} label="Journal" />
+            <TabLink to="/feed" icon={<FaNewspaper />} label="Feed" />
+
             <button
                 onClick={onAddBookClick}
                 className="flex flex-col items-center text-indigo-600 hover:text-indigo-700"
@@ -25,7 +34,10 @@ function TabLink({ to, icon, label }) {
         <NavLink
             to={to}
             className={({ isActive }) =>
-                `flex flex-col items-center ${isActive ? "text-indigo-600" : "text-gray-500 hover:text-indigo-500"}`
+                `flex flex-col items-center ${isActive
+                    ? "text-indigo-600"
+                    : "text-gray-500 hover:text-indigo-500"
+                }`
             }
         >
             <div className="text-xl">{icon}</div>
