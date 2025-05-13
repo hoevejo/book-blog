@@ -86,8 +86,21 @@ export default function PrivateBookCard({
                     >
                         {formatStatus(status)}
                     </span>
-                    {status === "completed" && rating && (
-                        <p className="text-xs mt-1">Rating: {rating} / 5</p>
+                    {status === "completed" && rating > 0 && (
+                        <div className="flex items-center gap-1 mt-1">
+                            {Array.from({ length: 5 }).map((_, i) => {
+                                const full = i + 1 <= Math.floor(rating);
+                                const half = i + 0.5 === rating;
+                                return full ? (
+                                    <span key={i} className="text-yellow-400 text-xs">★</span>
+                                ) : half ? (
+                                    <span key={i} className="text-yellow-400 text-xs">☆</span>
+                                ) : (
+                                    <span key={i} className="text-gray-400 text-xs">★</span>
+                                );
+                            })}
+                            <span className="text-[10px] text-white font-semibold ml-1">{rating}/5</span>
+                        </div>
                     )}
                 </div>
             </div>
