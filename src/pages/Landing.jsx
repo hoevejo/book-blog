@@ -1,14 +1,15 @@
-// LandingPage.jsx
 import { useNavigate } from "react-router-dom";
 import { motion as Motion } from "framer-motion";
-import { FaStar, FaFeatherAlt, FaBookReader, FaRobot } from "react-icons/fa";
-import React from "react";
+import { FaStar, FaFeatherAlt, FaBookOpen, FaRobot } from "react-icons/fa";
+import PrivateBookCard from "../components/PrivateBookCard";
+import dummyBooks from "../data/dummyBooks"; // assume this is a local array of 4 dummy book objects
+
 export default function LandingPage() {
     const navigate = useNavigate();
 
     return (
         <div className="w-full min-h-screen bg-gradient-to-b from-amber-50 to-white text-gray-800">
-            {/* Hero Section */}
+            {/* Hero */}
             <section className="px-6 py-20 text-center max-w-4xl mx-auto">
                 <Motion.h1
                     initial={{ opacity: 0, y: -20 }}
@@ -16,7 +17,7 @@ export default function LandingPage() {
                     transition={{ duration: 0.8 }}
                     className="text-4xl md:text-6xl font-serif font-bold mb-4"
                 >
-                    Discover, Review, and Share the Books You Love
+                    Your Cozy Digital Library
                 </Motion.h1>
                 <Motion.p
                     initial={{ opacity: 0 }}
@@ -24,7 +25,7 @@ export default function LandingPage() {
                     transition={{ delay: 0.4, duration: 0.6 }}
                     className="text-lg md:text-xl mb-8"
                 >
-                    Book Blog is your cozy space to keep track of your reads, find new favorites, and connect through stories.
+                    A peaceful space to track your books, journals, goals, and personal reading journey — all in one place.
                 </Motion.p>
                 <Motion.button
                     whileHover={{ scale: 1.05 }}
@@ -36,54 +37,51 @@ export default function LandingPage() {
                 </Motion.button>
             </section>
 
-            {/* Features Section */}
+            {/* Features */}
             <section className="px-6 py-16 bg-white">
                 <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
                     <FeatureCard
-                        icon={<FaFeatherAlt className="text-3xl text-rose-500" />}
-                        title="Add and Review Books"
-                        text="Easily track what you're reading and share your thoughts with rich reviews and star ratings."
-                    />
-                    <FeatureCard
-                        icon={<FaRobot className="text-3xl text-green-500" />}
-                        title="Smart Recommendations"
-                        text="Tell us what you like, and our AI assistant will recommend titles tailored to your tastes."
-                    />
-                    <FeatureCard
-                        icon={<FaBookReader className="text-3xl text-indigo-600" />}
-                        title="Explore Book Feeds"
-                        text="See what others are reading, upvote reviews, and find hidden gems shared by the community."
+                        icon={<FaBookOpen className="text-3xl text-indigo-500" />}
+                        title="Track Your Books"
+                        text="Add books, mark progress, and organize your reading status with ease."
                     />
                     <FeatureCard
                         icon={<FaStar className="text-3xl text-yellow-500" />}
-                        title="Personal Collections"
-                        text="Organize to-read lists, maintain journals, and create a reading legacy you can reflect on."
+                        title="Rate and Reflect"
+                        text="Use star ratings and journals to remember what you loved (or didn’t)."
+                    />
+                    <FeatureCard
+                        icon={<FaRobot className="text-3xl text-green-500" />}
+                        title="AI-Powered Suggestions"
+                        text="Let our assistant help you discover your next favorite book."
+                    />
+                    <FeatureCard
+                        icon={<FaFeatherAlt className="text-3xl text-rose-500" />}
+                        title="Journaling and Goals"
+                        text="Privately document your thoughts and set reading goals that matter to you."
                     />
                 </div>
             </section>
 
-            {/* Preview Feed Section */}
+            {/* Preview Your Library */}
             <section className="px-6 py-12 bg-amber-50 text-center">
-                <h2 className="text-2xl font-bold mb-6">A Peek Into Book Blog</h2>
+                <h2 className="text-2xl font-bold mb-6">Start Building Your Library</h2>
                 <div className="flex flex-wrap justify-center gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div
-                            key={i}
-                            className="w-60 h-80 bg-white border border-gray-200 rounded-lg shadow p-4 text-left relative overflow-hidden"
-                        >
-                            <div className="h-40 bg-gray-100 rounded mb-4 animate-pulse" />
-                            <p className="font-semibold">Example Book Title {i}</p>
-                            <p className="text-sm text-gray-500 mb-2">Author Name</p>
-                            <p className="text-xs text-gray-400 italic">Sign in to see more</p>
+                    {dummyBooks.map((book, index) => (
+                        <div key={index} className="scale-90 hover:scale-100 transition">
+                            <PrivateBookCard book={book} onClick={() => { }} />
                         </div>
                     ))}
                 </div>
+                <p className="text-sm text-gray-500 mt-4 italic">
+                    Sign in to start adding your own books
+                </p>
             </section>
 
-            {/* Final Call to Action */}
+            {/* Final CTA */}
             <section className="px-6 py-16 text-center">
-                <h3 className="text-3xl font-serif font-bold mb-4">Ready to join the cozy reading community?</h3>
-                <p className="mb-6">Sign in to start adding books, writing reviews, and exploring new reads with ease.</p>
+                <h3 className="text-3xl font-serif font-bold mb-4">Build your peaceful reading sanctuary</h3>
+                <p className="mb-6">Log your journey, explore new reads, and grow your digital bookshelf — at your own pace.</p>
                 <button
                     onClick={() => navigate("/auth")}
                     className="bg-indigo-600 text-white px-8 py-3 rounded-full hover:bg-indigo-700 shadow"
