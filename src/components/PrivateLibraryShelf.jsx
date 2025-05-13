@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     FaChevronDown,
     FaChevronRight,
@@ -24,8 +24,17 @@ export default function PrivateLibraryShelf({
 }) {
     const [isOpen, setIsOpen] = useState(true);
     const [isDraggingOverHeader, setIsDraggingOverHeader] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(false);
+    const [tempTitle, setTempTitle] = useState(title);
+    const inputRef = useRef(null);
 
     const openState = controlledOpen !== undefined ? controlledOpen : isOpen;
+
+    useEffect(() => {
+        if (editingTitle && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [editingTitle]);
 
     const handleToggle = () => {
         if (onToggleOpen) {
@@ -55,7 +64,9 @@ export default function PrivateLibraryShelf({
     return (
         <section className="mb-6">
             <div
-                className={`flex justify-between items-center cursor-pointer px-4 py-2 rounded-lg shadow-sm group transition-colors ${isDraggingOverHeader ? "bg-indigo-100 border border-indigo-400" : "bg-white"
+                className={`flex justify-between items-center cursor-pointer px-4 py-2 rounded-lg shadow-sm group transition-colors ${isDraggingOverHeader
+                    ? "bg-indigo-100 border border-indigo-400"
+                    : "bg-white"
                     }`}
                 onClick={handleToggle}
                 onDragOver={handleDragOverHeader}
@@ -64,9 +75,67 @@ export default function PrivateLibraryShelf({
             >
                 <div className="flex items-center gap-2">
                     {openState ? <FaChevronDown /> : <FaChevronRight />}
-                    <h3 className="text-lg font-semibold text-indigo-700">
-                        {title} <span className="text-gray-500">({books.length})</span>
-                    </h3>
+                    {editingTitle ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                ref={inputRef}
+                                value={tempTitle}
+                                onChange={(e) => setTempTitle(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        if (
+                                            tempTitle.trim() &&
+                                            tempTitle.trim() !== title.trim()
+                                        ) {
+                                            onRenameCategory?.(
+                                                categoryId,
+                                                tempTitle.trim()
+                                            );
+                                        }
+                                        setEditingTitle(false);
+                                    }
+                                }}
+                                className="border px-2 py-1 rounded text-sm"
+                            />
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (
+                                        tempTitle.trim() &&
+                                        tempTitle.trim() !== title.trim()
+                                    ) {
+                                        onRenameCategory?.(
+                                            categoryId,
+                                            tempTitle.trim()
+                                        );
+                                    }
+                                    setEditingTitle(false);
+                                }}
+                                className="text-sm bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setTempTitle(title);
+                                    setEditingTitle(false);
+                                }}
+                                className="text-sm bg-gray-300 text-gray-700 px-2 py-1 rounded hover:bg-gray-400"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <h3 className="text-lg font-semibold text-indigo-700">
+                            {title}{" "}
+                            <span className="text-gray-500">
+                                ({books.length})
+                            </span>
+                        </h3>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -80,12 +149,12 @@ export default function PrivateLibraryShelf({
                         View All
                     </button>
 
-                    {isCustom && (
+                    {isCustom && !editingTitle && (
                         <div className="flex items-center gap-2 opacity-20 group-hover:opacity-100 transition-opacity duration-200">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onRenameCategory(categoryId, title);
+                                    setEditingTitle(true);
                                 }}
                                 title="Rename Category"
                                 className="text-indigo-600 hover:text-indigo-800 hover:scale-110 transition-transform"
@@ -116,8 +185,12 @@ export default function PrivateLibraryShelf({
                                 book={book}
                                 onClick={() => onBookClick(book)}
                                 draggable
-                                onDragStart={() => onDragStart?.(book.id)}
-                                onRemove={onRemoveBook ? () => onRemoveBook(book.id) : undefined}
+                                onDragStart={() => onDragStart?.(book.id, categoryId || null)}
+                                onRemove={
+                                    onRemoveBook
+                                        ? () => onRemoveBook(book.id)
+                                        : undefined
+                                }
                                 currentCategoryId={categoryId}
                             />
                         ))}

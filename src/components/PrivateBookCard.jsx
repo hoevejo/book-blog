@@ -8,32 +8,15 @@ export default function PrivateBookCard({
     draggable = false,
     onDragStart,
     onRemove, // optional
-    currentCategoryId, // optional
+    currentCategoryId, // optional — passed from PrivateLibraryShelf
 }) {
     const { title, author, cover, rating, status } = book;
     const location = useLocation();
 
-    const handleRemove = async (e) => {
-        e.preventDefault(); // prevents card's onClick
+    const handleRemove = (e) => {
+        e.preventDefault();
         e.stopPropagation();
-
-        const isUnassigned = !currentCategoryId;
-
-        const result = await Swal.fire({
-            title: isUnassigned
-                ? "Remove from all categories?"
-                : "Remove from this category?",
-            text: isUnassigned
-                ? "This will remove the book from all categories."
-                : "This will remove the book from this category only.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Yes, remove it",
-            cancelButtonText: "Cancel",
-            confirmButtonColor: "#dc2626",
-        });
-
-        if (result.isConfirmed && onRemove) {
+        if (onRemove) {
             onRemove(book.id);
         }
     };
@@ -46,13 +29,19 @@ export default function PrivateBookCard({
     return (
         <div
             onClick={(e) => {
-                if (e.defaultPrevented) return; // skip if ❌ was clicked
+                if (e.defaultPrevented) return;
                 onClick?.();
             }}
             draggable={draggable}
             onDragStart={(e) => {
                 e.stopPropagation();
-                onDragStart?.();
+                onDragStart?.(book.id, currentCategoryId || null);
+            }}
+            onDragEnd={() => {
+                if (typeof window !== "undefined") {
+                    const event = new CustomEvent("book-drag-end");
+                    window.dispatchEvent(event);
+                }
             }}
             className={`relative w-40 h-60 rounded-lg overflow-hidden shadow cursor-pointer group select-none ${draggable ? "hover:opacity-90 active:opacity-70" : ""}`}
             style={{

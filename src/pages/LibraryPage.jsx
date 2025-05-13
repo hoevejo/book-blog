@@ -23,6 +23,7 @@ export default function PrivateLibraryPage() {
     const [categories, setCategories] = useState({});
     const [activeBook, setActiveBook] = useState(null);
     const [draggedBookId, setDraggedBookId] = useState(null);
+    const [draggedFromCategoryId, setDraggedFromCategoryId] = useState(null);
     const [showAddBookModal, setShowAddBookModal] = useState(false);
     const [addingCategory, setAddingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState("");
@@ -131,27 +132,41 @@ export default function PrivateLibraryPage() {
         const newId = newCategoryName.toLowerCase().replace(/\s+/g, "-");
         await setDoc(doc(db, "users", userProfile.uid, "categories", newId), {
             name: newCategoryName,
-            bookIds: [],
         });
         setCategories((prev) => ({
             ...prev,
-            [newId]: { id: newId, name: newCategoryName, bookIds: [] },
+            [newId]: { id: newId, name: newCategoryName },
         }));
         setNewCategoryName("");
         setAddingCategory(false);
     };
 
-    const handleDropToCategory = async (targetCategoryId) => {
+    const handleDropToCategory = async (targetId) => {
         const book = books.find((b) => b.id === draggedBookId);
         if (!book || !userProfile) return;
 
-        const updatedCategories = Array.from(new Set([...(book.categories || []), targetCategoryId]));
+        if (defaultStatuses.includes(targetId)) {
+            if (book.status !== targetId) {
+                await updateDoc(doc(db, "users", userProfile.uid, "books", book.id), {
+                    status: targetId,
+                });
+            }
+            setDraggedBookId(null);
+            setDraggedFromCategoryId(null);
+            fetchLibraryData();
+            return;
+        }
+
+        const updatedCategories = Array.from(
+            new Set([...(book.categories || []), targetId])
+        );
 
         await updateDoc(doc(db, "users", userProfile.uid, "books", book.id), {
             categories: updatedCategories,
         });
 
         setDraggedBookId(null);
+        setDraggedFromCategoryId(null);
         fetchLibraryData();
     };
 
@@ -192,6 +207,15 @@ export default function PrivateLibraryPage() {
         setRemovalInProgress(false);
     };
 
+    useEffect(() => {
+        const handleDragEnd = () => {
+            setDraggedBookId(null);
+            setDraggedFromCategoryId(null);
+        };
+        window.addEventListener("book-drag-end", handleDragEnd);
+        return () => window.removeEventListener("book-drag-end", handleDragEnd);
+    }, []);
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4">
             <div className="max-w-5xl mx-auto">
@@ -212,7 +236,6 @@ export default function PrivateLibraryPage() {
                         </button>
                     </div>
                 </div>
-
                 {addingCategory && (
                     <div className="flex gap-2 mb-6">
                         <input
@@ -236,14 +259,17 @@ export default function PrivateLibraryPage() {
                         </button>
                     </div>
                 )}
-
+                {/* Status shelves */}
                 {defaultStatuses.map((status) => (
                     <PrivateLibraryShelf
                         key={status}
                         title={status.replace("-", " ").toUpperCase()}
                         books={booksByStatus(status)}
                         onBookClick={setActiveBook}
-                        onDragStart={setDraggedBookId}
+                        onDragStart={(bookId) => {
+                            setDraggedBookId(bookId);
+                            setDraggedFromCategoryId(null);
+                        }}
                         onDropCategory={() => handleDropToCategory(status)}
                         isOpen={openSections[status]}
                         onToggleOpen={() => toggleSection(status)}
@@ -252,11 +278,15 @@ export default function PrivateLibraryPage() {
                     />
                 ))}
 
+                {/* Unassigned shelf */}
                 <PrivateLibraryShelf
                     title="Unassigned Books"
                     books={unassignedBooks}
                     onBookClick={setActiveBook}
-                    onDragStart={setDraggedBookId}
+                    onDragStart={(bookId) => {
+                        setDraggedBookId(bookId);
+                        setDraggedFromCategoryId(null);
+                    }}
                     onDropCategory={handleDropToCategory}
                     isOpen={openSections["unassigned"]}
                     onToggleOpen={() => toggleSection("unassigned")}
@@ -264,6 +294,7 @@ export default function PrivateLibraryPage() {
                     onRemoveBook={(bookId) => handleRemoveFromCategory(bookId, null)}
                 />
 
+                {/* Custom categories */}
                 {Object.entries(categories).map(([id, cat]) => (
                     <PrivateLibraryShelf
                         key={id}
@@ -271,7 +302,10 @@ export default function PrivateLibraryPage() {
                         books={booksByCategory(id)}
                         onBookClick={setActiveBook}
                         categoryId={id}
-                        onDragStart={setDraggedBookId}
+                        onDragStart={(bookId) => {
+                            setDraggedBookId(bookId);
+                            setDraggedFromCategoryId(id);
+                        }}
                         onDropCategory={() => handleDropToCategory(id)}
                         isCustom
                         onRenameCategory={handleRenameCategory}
@@ -283,12 +317,14 @@ export default function PrivateLibraryPage() {
                     />
                 ))}
 
+                {/* Modals */}
                 <BookEditModal
                     isOpen={!!activeBook}
                     onClose={() => setActiveBook(null)}
                     book={activeBook}
                     userId={userProfile?.uid}
                     onSave={() => fetchLibraryData()}
+                    categories={categories}
                 />
 
                 <Modal isOpen={showAddBookModal} onClose={() => setShowAddBookModal(false)}>
@@ -300,9 +336,55 @@ export default function PrivateLibraryPage() {
                     />
                 </Modal>
 
+                {/* Drop Zones */}
+                {draggedBookId && draggedFromCategoryId && (
+                    <div
+                        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-yellow-100 border border-yellow-500 text-yellow-800 px-6 py-3 rounded-lg shadow-lg text-sm flex items-center gap-2"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={async () => {
+                            if (removalInProgress) return;
+                            setRemovalInProgress(true);
+
+                            const book = books.find((b) => b.id === draggedBookId);
+                            if (!book || !userProfile) {
+                                setRemovalInProgress(false);
+                                return;
+                            }
+
+                            const confirm = await Swal.fire({
+                                title: "Remove from this category?",
+                                text: "This will remove the book only from the category it was dragged from.",
+                                icon: "warning",
+                                showCancelButton: true,
+                                confirmButtonText: "Yes, remove it",
+                                confirmButtonColor: "#f59e0b",
+                            });
+
+                            if (confirm.isConfirmed) {
+                                const updatedCategories = (book.categories || []).filter(
+                                    (c) => c !== draggedFromCategoryId
+                                );
+
+                                await updateDoc(doc(db, "users", userProfile.uid, "books", book.id), {
+                                    categories: updatedCategories,
+                                });
+
+                                fetchLibraryData();
+                            }
+
+                            setDraggedBookId(null);
+                            setDraggedFromCategoryId(null);
+                            setRemovalInProgress(false);
+                        }}
+                    >
+                        <span className="text-lg">➖</span>
+                        Remove from dragged category
+                    </div>
+                )}
+
                 {draggedBookId && (
                     <div
-                        className="fixed right-0 top-0 bottom-0 w-12 bg-gray-200 flex items-center justify-center z-50 text-sm text-red-700 font-semibold shadow-inner"
+                        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-red-100 border border-red-500 text-red-700 px-6 py-3 rounded-lg shadow-lg text-sm flex items-center gap-2"
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={async () => {
                             if (removalInProgress) return;
@@ -332,10 +414,12 @@ export default function PrivateLibraryPage() {
                             }
 
                             setDraggedBookId(null);
+                            setDraggedFromCategoryId(null);
                             setRemovalInProgress(false);
                         }}
                     >
-                        ❌<br />Remove
+                        <span className="text-lg">🗑️</span>
+                        Remove from all categories
                     </div>
                 )}
             </div>

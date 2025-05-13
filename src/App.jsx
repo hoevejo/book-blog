@@ -9,6 +9,7 @@ import JournalPage from "./pages/JournalPage";
 import HomePage from "./pages/Home"
 import LibraryPage from "./pages/LibraryPage";
 import ViewCategoryPage from "./pages/ViewCategoryPage";
+import DiscoveryPage from "./pages/DiscoverPage";
 export default function App() {
   return (
     <BrowserRouter>
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/library/category/:categoryId" element={<ViewCategoryPage />} />
+          <Route path="/discover" element={<DiscoveryPage />} />
           {/* other private routes */}
         </Route>
       </Routes>

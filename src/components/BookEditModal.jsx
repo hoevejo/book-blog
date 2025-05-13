@@ -1,21 +1,29 @@
-// components/BookEditModal.jsx
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 import Swal from "sweetalert2";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../utils/firebaseConfig";
 import Rating from "react-rating";
+import Select from "react-select";
 import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
 
 const ratingLabels = [
     "Terrible", "Poor", "Average", "Good", "Excellent"
 ];
 
-export default function BookEditModal({ isOpen, onClose, book, userId, onSave }) {
+export default function BookEditModal({
+    isOpen,
+    onClose,
+    book,
+    userId,
+    onSave,
+    categories = {},
+}) {
     const [status, setStatus] = useState("to-read");
     const [rating, setRating] = useState(0);
     const [review, setReview] = useState("");
     const [isPublic, setIsPublic] = useState(false);
+    const [selectedCategories, setSelectedCategories] = useState([]);
 
     useEffect(() => {
         if (book) {
@@ -23,6 +31,7 @@ export default function BookEditModal({ isOpen, onClose, book, userId, onSave })
             setRating(book.rating || 0);
             setReview(book.review || "");
             setIsPublic(book.isPublic || false);
+            setSelectedCategories(book.categories || []);
         }
     }, [book]);
 
@@ -35,6 +44,7 @@ export default function BookEditModal({ isOpen, onClose, book, userId, onSave })
             rating,
             review,
             isPublic,
+            categories: selectedCategories,
         });
         onSave();
         onClose();
@@ -57,6 +67,15 @@ export default function BookEditModal({ isOpen, onClose, book, userId, onSave })
             onClose();
         }
     };
+
+    const categoryOptions = Object.entries(categories).map(([id, cat]) => ({
+        value: id,
+        label: cat.name,
+    }));
+
+    const selectedCategoryOptions = categoryOptions.filter((opt) =>
+        selectedCategories.includes(opt.value)
+    );
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
@@ -129,10 +148,26 @@ export default function BookEditModal({ isOpen, onClose, book, userId, onSave })
                         />
                         Make this book public
                     </label>
+
+                    {categoryOptions.length > 0 && (
+                        <div>
+                            <label className="block mt-4 mb-1 text-sm font-medium">Categories</label>
+                            <Select
+                                isMulti
+                                options={categoryOptions}
+                                value={selectedCategoryOptions}
+                                onChange={(selected) =>
+                                    setSelectedCategories(selected.map((opt) => opt.value))
+                                }
+                                className="react-select-container"
+                                classNamePrefix="react-select"
+                                placeholder="Select categories..."
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-between items-center mt-6">
-                    {/* Left Buttons */}
                     <div className="flex gap-2">
                         <button
                             onClick={handleSave}
@@ -146,10 +181,8 @@ export default function BookEditModal({ isOpen, onClose, book, userId, onSave })
                         >
                             Cancel
                         </button>
-
                     </div>
 
-                    {/* Right (Delete) */}
                     <button
                         onClick={handleDelete}
                         className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
