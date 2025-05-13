@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion as Motion } from "framer-motion";
 import { FaStar, FaFeatherAlt, FaBookOpen, FaRobot } from "react-icons/fa";
 import PrivateBookCard from "../components/PrivateBookCard";
-import dummyBooks from "../data/dummyBooks"; // assume this is a local array of 4 dummy book objects
+import dummyBooks from "../data/dumbyBooks"; // assume this is a local array of 4 dummy book objects
 
 export default function LandingPage() {
     const navigate = useNavigate();
