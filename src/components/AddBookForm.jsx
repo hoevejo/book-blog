@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import Rating from "react-rating";
 import toast from "react-hot-toast";
 import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
+import Select from "react-select";
 
 export default function AddBookForm() {
     const [query, setQuery] = useState("");
@@ -164,31 +165,26 @@ export default function AddBookForm() {
                         {selectedBook.summary}
                     </p>
 
-                    {categories.length > 0 && (
-                        <div>
-                            <label className="block font-medium">Categories</label>
-                            <div className="flex flex-wrap gap-2">
-                                {categories.map((cat) => (
-                                    <label key={cat.id} className="flex items-center gap-1 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            value={cat.id}
-                                            checked={selectedCategories.includes(cat.id)}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                setSelectedCategories((prev) =>
-                                                    checked
-                                                        ? [...prev, cat.id]
-                                                        : prev.filter((id) => id !== cat.id)
-                                                );
-                                            }}
-                                        />
-                                        {cat.name}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    <div>
+                        <label className="block font-medium mb-1">Categories</label>
+                        <Select
+                            isMulti
+                            options={categories.map((cat) => ({
+                                value: cat.id,
+                                label: cat.name,
+                            }))}
+                            value={categories
+                                .filter((cat) => selectedCategories.includes(cat.id))
+                                .map((cat) => ({ value: cat.id, label: cat.name }))}
+                            onChange={(selectedOptions) =>
+                                setSelectedCategories(selectedOptions.map((opt) => opt.value))
+                            }
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            placeholder="Select categories..."
+                        />
+                    </div>
+
 
                     <div className="flex items-center gap-2">
                         <input

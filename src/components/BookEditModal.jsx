@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 import Swal from "sweetalert2";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { db } from "../utils/firebaseConfig";
 import Rating from "react-rating";
 import Select from "react-select";
@@ -18,14 +18,17 @@ export default function BookEditModal({
     const [status, setStatus] = useState("to-read");
     const [rating, setRating] = useState(0);
     const [selectedCategories, setSelectedCategories] = useState([]);
+    const [newCategory, setNewCategory] = useState("");
+    const [localCategories, setLocalCategories] = useState(categories);
 
     useEffect(() => {
         if (book) {
             setStatus(book.status || "to-read");
             setRating(book.rating || 0);
             setSelectedCategories(book.categories || []);
+            setLocalCategories(categories);
         }
-    }, [book]);
+    }, [book, categories]);
 
     if (!book) return null;
 
@@ -58,7 +61,21 @@ export default function BookEditModal({
         }
     };
 
-    const categoryOptions = Object.entries(categories).map(([id, cat]) => ({
+    const handleAddCategory = async () => {
+        if (!newCategory.trim()) return;
+
+        const id = newCategory.toLowerCase().replace(/\s+/g, "-");
+        const catRef = doc(db, "users", userId, "categories", id);
+        await setDoc(catRef, { name: newCategory });
+
+        const newCatObj = { id, name: newCategory };
+
+        setLocalCategories((prev) => ({ ...prev, [id]: newCatObj }));
+        setSelectedCategories((prev) => [...prev, id]);
+        setNewCategory("");
+    };
+
+    const categoryOptions = Object.entries(localCategories).map(([id, cat]) => ({
         value: id,
         label: cat.name,
     }));
@@ -85,23 +102,39 @@ export default function BookEditModal({
                     </div>
                 </div>
 
-                {/* Categories (moved above status) */}
-                {categoryOptions.length > 0 && (
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Categories</label>
-                        <Select
-                            isMulti
-                            options={categoryOptions}
-                            value={selectedCategoryOptions}
-                            onChange={(selected) =>
-                                setSelectedCategories(selected.map((opt) => opt.value))
-                            }
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                            placeholder="Select categories..."
-                        />
-                    </div>
-                )}
+                {/* Category selector */}
+                <div>
+                    <label className="block text-sm font-medium mb-1">Categories</label>
+                    <Select
+                        isMulti
+                        options={categoryOptions}
+                        value={selectedCategoryOptions}
+                        onChange={(selected) =>
+                            setSelectedCategories(selected.map((opt) => opt.value))
+                        }
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        placeholder="Select categories..."
+                    />
+                </div>
+
+                {/* New category adder */}
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder="New category"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="border px-3 py-1 rounded w-full text-sm"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                    >
+                        Add
+                    </button>
+                </div>
 
                 {/* Status */}
                 <div>
@@ -117,7 +150,7 @@ export default function BookEditModal({
                     </select>
                 </div>
 
-                {/* Rating (only if completed) */}
+                {/* Rating */}
                 {status === "completed" && (
                     <div>
                         <label className="block text-sm font-medium">Rating</label>
@@ -135,7 +168,7 @@ export default function BookEditModal({
                     </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Buttons */}
                 <div className="flex justify-between items-center mt-6">
                     <div className="flex gap-2">
                         <button
@@ -151,7 +184,6 @@ export default function BookEditModal({
                             Cancel
                         </button>
                     </div>
-
                     <button
                         onClick={handleDelete}
                         className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
