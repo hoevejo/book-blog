@@ -46,7 +46,7 @@ export default function Header({ onToggleSidebar }) {
                     onClick={() => navigate("/")}
                 >
                     <img
-                        src="/book-logo.svg"
+                        src="/favicon.png"
                         alt="Book Blog Logo"
                         className="w-8 h-8"
                     />

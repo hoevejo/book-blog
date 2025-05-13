@@ -1,140 +1,78 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "../utils/firebaseConfig";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import toast from "react-hot-toast";
-import Swal from "sweetalert2";
+import {
+    doc,
+    setDoc,
+    serverTimestamp,
+    getDocs,
+    collection,
+    setDoc as addCategoryDoc,
+} from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import Rating from "react-rating";
+import toast from "react-hot-toast";
 import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
 
 export default function AddBookForm() {
     const [query, setQuery] = useState("");
-    const [searchType, setSearchType] = useState("title");
     const [searchResults, setSearchResults] = useState([]);
     const [selectedBook, setSelectedBook] = useState(null);
     const [status, setStatus] = useState("to-read");
     const [rating, setRating] = useState(0);
-    const [isPublic, setIsPublic] = useState(true);
-    const [resultLimit, setResultLimit] = useState(5);
+    const [categories, setCategories] = useState([]);
+    const [selectedCategories, setSelectedCategories] = useState([]);
+    const [newCategory, setNewCategory] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
-        setResultLimit(5);
-    }, [query, searchType]);
+        fetchCategories();
+    }, []);
 
-    const getAuthorNames = async (authors) => {
-        const names = await Promise.all(
-            authors.map(async (author) => {
-                try {
-                    const res = await fetch(`https://openlibrary.org${author.key}.json`);
-                    const data = await res.json();
-                    return data.name;
-                } catch {
-                    return "Unknown Author";
-                }
-            })
-        );
-        return names.join(", ");
+    const fetchCategories = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        const snap = await getDocs(collection(db, "users", user.uid, "categories"));
+        const catList = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCategories(catList);
     };
 
-    const searchBooks = async (limit = resultLimit) => {
-        setSearchResults([]);
+    const handleAddCategory = async () => {
+        const user = auth.currentUser;
+        const id = newCategory.toLowerCase().replace(/\s+/g, "-");
+        await addCategoryDoc(doc(db, "users", user.uid, "categories", id), {
+            name: newCategory,
+        });
+        setCategories((prev) => [...prev, { id, name: newCategory }]);
+        setSelectedCategories((prev) => [...prev, id]);
+        setNewCategory("");
+    };
+
+    const searchGoogleBooks = async () => {
+        if (!query.trim()) return;
         setLoading(true);
-
-        if (searchType === "isbn") {
-            const isbn = query.replace(/-/g, "");
-            try {
-                const res = await fetch(`https://openlibrary.org/isbn/${isbn}.json`);
-                const data = await res.json();
-
-                let description = "No summary available.";
-                const workKey = data.works?.[0]?.key;
-
-                if (workKey) {
-                    try {
-                        const workRes = await fetch(`https://openlibrary.org${workKey}.json`);
-                        const workData = await workRes.json();
-                        description =
-                            typeof workData.description === "string"
-                                ? workData.description
-                                : workData.description?.value || description;
-                    } catch { /* empty */ }
-                }
-
-                const book = {
-                    id: workKey?.replace("/works/", "") || data.key.replace("/books/", ""),
-                    title: data.title,
-                    author: data.authors ? await getAuthorNames(data.authors) : "Unknown Author",
-                    cover: data.covers?.[0]
-                        ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`
-                        : null,
-                    summary: description
-                };
-
-                setSearchResults([book]);
-            } catch {
-                toast.error("No book found for that ISBN.");
-            }
-        } else {
-            const field = searchType === "author" ? "author" : "title";
+        try {
             const res = await fetch(
-                `https://openlibrary.org/search.json?${field}=${encodeURIComponent(query)}`
+                `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`
             );
             const data = await res.json();
-
-            const limitedBooks = data.docs.slice(0, limit);
-
-            const books = await Promise.all(
-                limitedBooks.map(async (b) => {
-                    const workKey = b.key;
-                    let description = "No summary available.";
-
-                    try {
-                        const workRes = await fetch(`https://openlibrary.org${workKey}.json`);
-                        const workData = await workRes.json();
-
-                        if (workData?.type?.key === "/type/redirect" && workData.location) {
-                            const redirectedRes = await fetch(`https://openlibrary.org${workData.location}.json`);
-                            const redirectedData = await redirectedRes.json();
-                            description =
-                                typeof redirectedData.description === "string"
-                                    ? redirectedData.description
-                                    : redirectedData.description?.value || description;
-                        } else {
-                            description =
-                                typeof workData.description === "string"
-                                    ? workData.description
-                                    : workData.description?.value || description;
-                        }
-                    } catch { /* empty */ }
-
-                    return {
-                        id: b.key.replace("/works/", ""),
-                        title: b.title,
-                        author: b.author_name?.join(", ") || "Unknown Author",
-                        cover: b.cover_i
-                            ? `https://covers.openlibrary.org/b/id/${b.cover_i}-L.jpg`
-                            : null,
-                        summary: description,
-                        year: b.first_publish_year || null
-                    };
-                })
-            );
-
+            const books = data.items.map((item) => {
+                const info = item.volumeInfo;
+                return {
+                    id: item.id,
+                    title: info.title,
+                    author: info.authors?.join(", ") || "Unknown Author",
+                    cover: info.imageLinks?.thumbnail || null,
+                    summary: info.description || "No summary available.",
+                    year: info.publishedDate ? info.publishedDate.split("-")[0] : null,
+                };
+            });
             setSearchResults(books);
+            // eslint-disable-next-line no-unused-vars
+        } catch (err) {
+            toast.error("Failed to fetch books.");
         }
-
         setLoading(false);
-    };
-
-    const handleViewMore = async () => {
-        const newLimit = resultLimit + 20;
-        setResultLimit(newLimit);
-        await searchBooks(newLimit);
-        setTimeout(() => {
-            window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-        }, 200);
     };
 
     const handleSubmit = async (e) => {
@@ -142,18 +80,8 @@ export default function AddBookForm() {
         if (!selectedBook) return;
         const user = auth.currentUser;
         if (!user) {
-            Swal.fire({
-                title: "Sign In Required",
-                text: "You need to be signed in to add a book.",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Go to Login",
-                cancelButtonText: "Cancel",
-                confirmButtonColor: "#6366f1",
-            }).then((result) => {
-                if (result.isConfirmed) navigate("/auth");
-            });
-            return;
+            toast.error("Sign in required.");
+            return navigate("/auth");
         }
 
         try {
@@ -162,49 +90,39 @@ export default function AddBookForm() {
                 ...selectedBook,
                 status,
                 rating,
-                isPublic,
+                categories: selectedCategories,
                 addedAt: serverTimestamp(),
             });
-
-            toast.success("Book added to your profile!");
+            toast.success("Book saved!");
             setSelectedBook(null);
             setQuery("");
             setSearchResults([]);
-            setRating(0);
-            setIsPublic(true);
             setStatus("to-read");
-        } catch (error) {
-            console.error("Add book failed:", error);
-            toast.error("Failed to add book. Please try again.");
+            setRating(0);
+            setSelectedCategories([]);
+        } catch (err) {
+            console.error("Save failed", err);
+            toast.error("Failed to save book.");
         }
     };
 
     const ratingLabels = ["Terrible", "Poor", "Okay", "Good", "Excellent"];
 
     return (
-        <div className="w-full max-w-xl mx-auto px-4 py-6 bg-white rounded-lg shadow">
+        <div className="w-full max-w-xl mx-auto px-4 py-6 bg-white rounded-lg shadow max-h-[90vh] overflow-y-auto">
             {!selectedBook ? (
                 <>
-                    <select
-                        value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
-                        className="w-full border px-3 py-2 rounded mb-2"
-                    >
-                        <option value="title">Title</option>
-                        <option value="author">Author</option>
-                        <option value="isbn">ISBN</option>
-                    </select>
                     <input
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder={`Search by ${searchType}...`}
+                        placeholder="Search for a book..."
                         className="w-full border px-3 py-2 rounded mb-2"
                     />
                     <button
-                        onClick={() => searchBooks()}
+                        onClick={searchGoogleBooks}
                         disabled={loading}
-                        className={`w-full py-2 rounded text-white ${loading ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                        className="w-full py-2 rounded bg-indigo-600 hover:bg-indigo-700 text-white"
                     >
                         {loading ? "Searching..." : "Search"}
                     </button>
@@ -216,19 +134,15 @@ export default function AddBookForm() {
                                 className="border p-2 rounded cursor-pointer hover:bg-gray-100"
                             >
                                 <strong>{book.title}</strong>
-                                {book.year && <span className="ml-1 text-xs text-gray-500">({book.year})</span>}
+                                {book.year && (
+                                    <span className="ml-1 text-xs text-gray-500">
+                                        ({book.year})
+                                    </span>
+                                )}
                                 <div className="text-sm text-gray-600">by {book.author}</div>
                             </div>
                         ))}
                     </div>
-                    {searchResults.length >= resultLimit && (
-                        <button
-                            onClick={handleViewMore}
-                            className="mt-4 w-full text-indigo-600 hover:underline text-sm"
-                        >
-                            View More Results
-                        </button>
-                    )}
                 </>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -246,7 +160,52 @@ export default function AddBookForm() {
                         </div>
                     </div>
 
-                    <p className="text-sm text-gray-700">{selectedBook.summary}</p>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {selectedBook.summary}
+                    </p>
+
+                    {categories.length > 0 && (
+                        <div>
+                            <label className="block font-medium">Categories</label>
+                            <div className="flex flex-wrap gap-2">
+                                {categories.map((cat) => (
+                                    <label key={cat.id} className="flex items-center gap-1 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            value={cat.id}
+                                            checked={selectedCategories.includes(cat.id)}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setSelectedCategories((prev) =>
+                                                    checked
+                                                        ? [...prev, cat.id]
+                                                        : prev.filter((id) => id !== cat.id)
+                                                );
+                                            }}
+                                        />
+                                        {cat.name}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            placeholder="Add new category"
+                            className="border px-2 py-1 rounded text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddCategory}
+                            className="text-sm bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                        >
+                            Add
+                        </button>
+                    </div>
 
                     <div>
                         <label className="block font-medium">Status</label>
@@ -263,7 +222,7 @@ export default function AddBookForm() {
 
                     {status === "completed" && (
                         <div>
-                            <label className="block font-medium mb-1">Rating</label>
+                            <label className="block font-medium">Rating</label>
                             <div className="flex items-center gap-2">
                                 <Rating
                                     fractions={2}
@@ -283,16 +242,6 @@ export default function AddBookForm() {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="isPublic"
-                            checked={isPublic}
-                            onChange={() => setIsPublic(!isPublic)}
-                        />
-                        <label htmlFor="isPublic" className="text-sm">Make this public</label>
-                    </div>
-
                     <div className="flex justify-between">
                         <button
                             type="button"
@@ -305,7 +254,7 @@ export default function AddBookForm() {
                             type="submit"
                             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
                         >
-                            Save to Profile
+                            Save to Library
                         </button>
                     </div>
                 </form>

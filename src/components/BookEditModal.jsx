@@ -7,10 +7,6 @@ import Rating from "react-rating";
 import Select from "react-select";
 import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
 
-const ratingLabels = [
-    "Terrible", "Poor", "Average", "Good", "Excellent"
-];
-
 export default function BookEditModal({
     isOpen,
     onClose,
@@ -21,16 +17,12 @@ export default function BookEditModal({
 }) {
     const [status, setStatus] = useState("to-read");
     const [rating, setRating] = useState(0);
-    const [review, setReview] = useState("");
-    const [isPublic, setIsPublic] = useState(false);
     const [selectedCategories, setSelectedCategories] = useState([]);
 
     useEffect(() => {
         if (book) {
             setStatus(book.status || "to-read");
             setRating(book.rating || 0);
-            setReview(book.review || "");
-            setIsPublic(book.isPublic || false);
             setSelectedCategories(book.categories || []);
         }
     }, [book]);
@@ -42,8 +34,6 @@ export default function BookEditModal({
         await updateDoc(bookRef, {
             status,
             rating,
-            review,
-            isPublic,
             categories: selectedCategories,
         });
         onSave();
@@ -79,22 +69,43 @@ export default function BookEditModal({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <div className="p-4 space-y-4 max-w-md">
-                {/* Book Details Header */}
+            <div className="p-4 space-y-4 max-w-md w-full">
+                {/* Header */}
                 <div className="flex gap-4 items-center">
-                    <img
-                        src={book.cover}
-                        alt={book.title}
-                        className="w-16 h-24 object-cover rounded shadow"
-                    />
-                    <div>
+                    {book.cover && (
+                        <img
+                            src={book.cover}
+                            alt={book.title}
+                            className="w-16 h-24 object-cover rounded shadow"
+                        />
+                    )}
+                    <div className="flex-1">
                         <h2 className="text-lg font-bold text-gray-800">{book.title}</h2>
                         <p className="text-sm text-gray-600 italic">by {book.author}</p>
                     </div>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="block text-sm font-medium">Status</label>
+                {/* Categories (moved above status) */}
+                {categoryOptions.length > 0 && (
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Categories</label>
+                        <Select
+                            isMulti
+                            options={categoryOptions}
+                            value={selectedCategoryOptions}
+                            onChange={(selected) =>
+                                setSelectedCategories(selected.map((opt) => opt.value))
+                            }
+                            className="react-select-container"
+                            classNamePrefix="react-select"
+                            placeholder="Select categories..."
+                        />
+                    </div>
+                )}
+
+                {/* Status */}
+                <div>
+                    <label className="block text-sm font-medium mt-2">Status</label>
                     <select
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
@@ -104,69 +115,27 @@ export default function BookEditModal({
                         <option value="in-progress">In Progress</option>
                         <option value="completed">Completed</option>
                     </select>
-
-                    {status === "completed" && (
-                        <>
-                            <div>
-                                <label className="block font-medium">Rating</label>
-                                <div className="flex items-center gap-2">
-                                    <Rating
-                                        fractions={2}
-                                        initialRating={rating}
-                                        onChange={(value) => setRating(value)}
-                                        emptySymbol={<FaRegStar className="text-2xl text-gray-300" />}
-                                        fullSymbol={<FaStar className="text-2xl text-yellow-500" />}
-                                        placeholderSymbol={<FaStarHalfAlt className="text-2xl text-yellow-400" />}
-                                    />
-                                    <span className="text-sm text-gray-600">{rating}/5</span>
-                                </div>
-                                {rating > 0 && (
-                                    <p className="text-xs text-gray-500 italic">
-                                        {ratingLabels[Math.floor(rating) - 1] || ""}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mt-2">Review</label>
-                                <textarea
-                                    value={review}
-                                    onChange={(e) => setReview(e.target.value)}
-                                    rows={3}
-                                    className="w-full border px-3 py-2 rounded-md"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    <label className="block mt-2 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={isPublic}
-                            onChange={(e) => setIsPublic(e.target.checked)}
-                            className="mr-2"
-                        />
-                        Make this book public
-                    </label>
-
-                    {categoryOptions.length > 0 && (
-                        <div>
-                            <label className="block mt-4 mb-1 text-sm font-medium">Categories</label>
-                            <Select
-                                isMulti
-                                options={categoryOptions}
-                                value={selectedCategoryOptions}
-                                onChange={(selected) =>
-                                    setSelectedCategories(selected.map((opt) => opt.value))
-                                }
-                                className="react-select-container"
-                                classNamePrefix="react-select"
-                                placeholder="Select categories..."
-                            />
-                        </div>
-                    )}
                 </div>
 
+                {/* Rating (only if completed) */}
+                {status === "completed" && (
+                    <div>
+                        <label className="block text-sm font-medium">Rating</label>
+                        <div className="flex items-center gap-2">
+                            <Rating
+                                fractions={2}
+                                initialRating={rating}
+                                onChange={(value) => setRating(value)}
+                                emptySymbol={<FaRegStar className="text-2xl text-gray-300" />}
+                                fullSymbol={<FaStar className="text-2xl text-yellow-500" />}
+                                placeholderSymbol={<FaStarHalfAlt className="text-2xl text-yellow-400" />}
+                            />
+                            <span className="text-sm text-gray-600">{rating}/5</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Buttons */}
                 <div className="flex justify-between items-center mt-6">
                     <div className="flex gap-2">
                         <button
