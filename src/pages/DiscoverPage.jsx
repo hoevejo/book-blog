@@ -204,7 +204,7 @@ export default function DiscoveryPage() {
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating}
-                                className={`px-6 py-2 rounded transition flex items-center justify-center ${isGenerating
+                                className={`w-full sm:w-auto px-6 py-2 rounded transition flex items-center justify-center mx-auto ${isGenerating
                                     ? "bg-gray-400 text-white cursor-not-allowed"
                                     : "bg-green-600 text-white hover:bg-green-700"
                                     }`}
