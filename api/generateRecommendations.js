@@ -1,5 +1,3 @@
-// /api/generateRecommendations.js
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -13,19 +11,18 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          // eslint-disable-next-line no-undef
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://book-blog-rosy.vercel.app/", // Replace with your site
-          "X-Title": "Book Blog", // Friendly site name for OpenRouter
+          "HTTP-Referer": "https://book-blog-rosy.vercel.app",
+          "X-Title": "Book Blog",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o", // Upgraded model
+          model: "openai/gpt-3.5-turbo", // ✅ safer fallback model
           messages: [
             {
               role: "system",
               content:
-                "You're a helpful book recommendation assistant. Respond with a list of exactly 5 books. Each should include a title, author, and a one-sentence summary.",
+                "You are a helpful assistant that gives 5 book recommendations. For each, respond in the format: Title by Author - One sentence summary.",
             },
             {
               role: "user",
@@ -37,15 +34,20 @@ export default async function handler(req, res) {
     );
 
     const data = await response.json();
-    const output = data.choices?.[0]?.message?.content;
+    console.log("💬 AI Response:", JSON.stringify(data, null, 2));
+
+    const output = data?.choices?.[0]?.message?.content;
 
     if (!output) {
-      return res.status(500).json({ error: "No valid response from AI." });
+      return res.status(500).json({
+        error: "No valid response from AI.",
+        details: data,
+      });
     }
 
     res.status(200).json({ result: output });
   } catch (err) {
-    console.error("AI request failed:", err);
+    console.error("❌ API Error:", err);
     res.status(500).json({ error: "Failed to generate recommendations" });
   }
 }
