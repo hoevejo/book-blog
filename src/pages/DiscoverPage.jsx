@@ -18,6 +18,7 @@ export default function DiscoveryPage() {
     const [history, setHistory] = useState([]);
     const [activeTab, setActiveTab] = useState("new"); // "new" or "history"
     const [expandedPromptIndex, setExpandedPromptIndex] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         const recentHistory = cleanOldHistory();
@@ -44,6 +45,7 @@ export default function DiscoveryPage() {
     };
 
     const handleGenerate = async () => {
+        setIsGenerating(true);
         const promptText = buildPrompt(selectedType, userInput);
 
         try {
@@ -83,6 +85,8 @@ export default function DiscoveryPage() {
         } catch (err) {
             console.error("❌ Recommendation error:", err);
             alert("Something went wrong: " + err.message);
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -199,10 +203,27 @@ export default function DiscoveryPage() {
 
                             <button
                                 onClick={handleGenerate}
-                                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
+                                disabled={isGenerating}
+                                className={`px-6 py-2 rounded transition flex items-center justify-center ${isGenerating
+                                    ? "bg-gray-400 text-white cursor-not-allowed"
+                                    : "bg-green-600 text-white hover:bg-green-700"
+                                    }`}
                             >
-                                Generate Recommendations
+                                {isGenerating ? (
+                                    <span className="flex items-center space-x-1">
+                                        <span>Generating</span>
+                                        <span className="flex">
+                                            <span className="animate-bounce-dot [animation-delay:-0.3s]">.</span>
+                                            <span className="animate-bounce-dot [animation-delay:-0.15s]">.</span>
+                                            <span className="animate-bounce-dot">.</span>
+                                        </span>
+                                    </span>
+                                ) : (
+                                    "Generate Recommendations"
+                                )}
                             </button>
+
+
                         </div>
 
                         {cachedPrompt && (
