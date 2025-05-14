@@ -7,19 +7,28 @@ const promptTypes = [
     { id: "custom", label: "✍️ Custom Prompt" },
 ];
 
+const HISTORY_KEY = "discoveryHistory";
+
 export default function DiscoveryPage() {
     const [selectedType, setSelectedType] = useState("new");
     const [userInput, setUserInput] = useState("");
     const [recommendations, setRecommendations] = useState([]);
+    const [customRawOutput, setCustomRawOutput] = useState(null);
     const [cachedPrompt, setCachedPrompt] = useState(null);
+    const [history, setHistory] = useState([]);
+    const [showHistory, setShowHistory] = useState(false);
 
     useEffect(() => {
-        const stored = JSON.parse(localStorage.getItem("discoveryCache"));
-        if (stored && Date.now() - stored.timestamp < 24 * 60 * 60 * 1000) {
-            setRecommendations(stored.results || []);
-            setCachedPrompt(stored.promptSummary || "");
+        const recentHistory = cleanOldHistory();
+        setHistory(recentHistory);
+
+        if (recentHistory.length && Date.now() - recentHistory[0].timestamp < 24 * 60 * 60 * 1000) {
+            setCachedPrompt(recentHistory[0].promptSummary);
+            setRecommendations(recentHistory[0].results || []);
+            setCustomRawOutput(recentHistory[0].type === "custom" ? recentHistory[0].raw : null);
         }
     }, []);
+
 
     const handleGenerate = async () => {
         const promptText = buildPrompt(selectedType, userInput);
@@ -37,15 +46,21 @@ export default function DiscoveryPage() {
                 throw new Error(data.error || "AI did not return a valid result.");
             }
 
-            const parsed = parseAIResponse(data.result);
-            const cache = {
+            const resultEntry = {
                 promptSummary: promptText,
-                results: parsed,
+                type: selectedType,
+                raw: data.result,
+                results: selectedType === "custom" ? null : parseAIResponse(data.result),
                 timestamp: Date.now(),
             };
-            localStorage.setItem("discoveryCache", JSON.stringify(cache));
-            setRecommendations(parsed);
+
+            const newHistory = [resultEntry, ...history].slice(0, 10);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+            setHistory(newHistory);
+
             setCachedPrompt(promptText);
+            setRecommendations(resultEntry.results || []);
+            setCustomRawOutput(selectedType === "custom" ? data.result : null);
         } catch (err) {
             console.error("❌ Recommendation error:", err);
             alert("Something went wrong: " + err.message);
@@ -83,6 +98,13 @@ export default function DiscoveryPage() {
         }
 
         return books;
+    };
+    const cleanOldHistory = () => {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+        const cutoff = Date.now() - 36 * 60 * 60 * 1000; // 36 hours in ms
+        const filtered = history.filter(entry => entry.timestamp >= cutoff);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+        return filtered;
     };
 
     const needsInput =
@@ -143,22 +165,58 @@ export default function DiscoveryPage() {
                     >
                         Generate Recommendations
                     </button>
+
+                    <button
+                        onClick={() => setShowHistory((prev) => !prev)}
+                        className="text-indigo-600 underline text-sm"
+                    >
+                        {showHistory ? "Hide Prompt History" : "Show Prompt History"}
+                    </button>
                 </div>
 
                 {cachedPrompt && (
                     <div className="text-sm text-gray-500 italic">
-                        Showing cached results from your last prompt: "{cachedPrompt}"
+                        Showing results for: "{cachedPrompt}"
+                    </div>
+                )}
+
+                {showHistory && (
+                    <div className="space-y-4 mt-4">
+                        {history.map((entry, idx) => (
+                            <div
+                                key={idx}
+                                className="p-4 border rounded bg-white cursor-pointer hover:bg-gray-50"
+                                onClick={() => {
+                                    setCachedPrompt(entry.promptSummary);
+                                    setRecommendations(entry.results || []);
+                                    setCustomRawOutput(entry.type === "custom" ? entry.raw : null);
+                                }}
+                            >
+                                <p className="text-sm text-gray-700 mb-1 font-medium">
+                                    {entry.promptSummary}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                </p>
+                            </div>
+                        ))}
                     </div>
                 )}
 
                 <div className="space-y-4">
-                    {recommendations.map((rec, idx) => (
-                        <div key={idx} className="bg-white border rounded-lg shadow p-4">
-                            <h3 className="text-lg font-semibold text-gray-800">{rec.title}</h3>
-                            <p className="text-sm text-gray-600 italic">by {rec.author}</p>
-                            <p className="text-sm mt-2 text-gray-700">{rec.summary}</p>
-                        </div>
-                    ))}
+                    {customRawOutput ? (
+                        <pre className="whitespace-pre-wrap bg-white border rounded-lg shadow p-4 text-sm text-gray-800">
+                            {customRawOutput}
+                        </pre>
+                    ) : (
+                        recommendations.map((rec, idx) => (
+                            <div key={idx} className="bg-white border rounded-lg shadow p-4">
+                                <h3 className="text-lg font-semibold text-gray-800">{rec.title}</h3>
+                                <p className="text-sm text-gray-600 italic">by {rec.author}</p>
+                                <p className="text-sm mt-2 text-gray-700">{rec.summary}</p>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
