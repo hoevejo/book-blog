@@ -37,46 +37,34 @@ export default function PrivateLibraryShelf({
     }, [editingTitle]);
 
     const handleToggle = () => {
-        if (onToggleOpen) {
-            onToggleOpen();
-        } else {
-            setIsOpen((prev) => !prev);
-        }
-    };
-
-    const handleDragOverHeader = (e) => {
-        e.preventDefault();
-        setIsDraggingOverHeader(true);
-    };
-
-    const handleDragLeaveHeader = () => {
-        setIsDraggingOverHeader(false);
-    };
-
-    const handleDropOnHeader = (e) => {
-        e.preventDefault();
-        setIsDraggingOverHeader(false);
-        if (onDropCategory) {
-            onDropCategory(categoryId);
-        }
+        onToggleOpen ? onToggleOpen() : setIsOpen((prev) => !prev);
     };
 
     return (
         <section className="mb-6">
+            {/* Header */}
             <div
-                className={`flex justify-between items-center cursor-pointer px-4 py-2 rounded-lg shadow-sm group transition-colors ${isDraggingOverHeader
+                className={`flex flex-wrap sm:flex-nowrap justify-between items-center px-4 py-2 rounded-lg shadow-sm group transition-colors ${isDraggingOverHeader
                     ? "bg-indigo-100 border border-indigo-400"
                     : "bg-white"
                     }`}
                 onClick={handleToggle}
-                onDragOver={handleDragOverHeader}
-                onDragLeave={handleDragLeaveHeader}
-                onDrop={handleDropOnHeader}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOverHeader(true);
+                }}
+                onDragLeave={() => setIsDraggingOverHeader(false)}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOverHeader(false);
+                    onDropCategory?.(categoryId);
+                }}
             >
-                <div className="flex items-center gap-2">
+                {/* Title Area */}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                     {openState ? <FaChevronDown /> : <FaChevronRight />}
                     {editingTitle ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <input
                                 ref={inputRef}
                                 value={tempTitle}
@@ -85,31 +73,19 @@ export default function PrivateLibraryShelf({
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
-                                        if (
-                                            tempTitle.trim() &&
-                                            tempTitle.trim() !== title.trim()
-                                        ) {
-                                            onRenameCategory?.(
-                                                categoryId,
-                                                tempTitle.trim()
-                                            );
+                                        if (tempTitle.trim() && tempTitle !== title) {
+                                            onRenameCategory?.(categoryId, tempTitle.trim());
                                         }
                                         setEditingTitle(false);
                                     }
                                 }}
-                                className="border px-2 py-1 rounded text-sm"
+                                className="border px-2 py-1 rounded text-sm w-full sm:w-auto"
                             />
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (
-                                        tempTitle.trim() &&
-                                        tempTitle.trim() !== title.trim()
-                                    ) {
-                                        onRenameCategory?.(
-                                            categoryId,
-                                            tempTitle.trim()
-                                        );
+                                    if (tempTitle.trim() && tempTitle !== title) {
+                                        onRenameCategory?.(categoryId, tempTitle.trim());
                                     }
                                     setEditingTitle(false);
                                 }}
@@ -129,16 +105,14 @@ export default function PrivateLibraryShelf({
                             </button>
                         </div>
                     ) : (
-                        <h3 className="text-lg font-semibold text-indigo-700">
-                            {title}{" "}
-                            <span className="text-gray-500">
-                                ({books.length})
-                            </span>
+                        <h3 className="text-lg font-semibold text-indigo-700 truncate">
+                            {title} <span className="text-gray-500">({books.length})</span>
                         </h3>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Actions */}
+                <div className="flex items-center gap-3 mt-2 sm:mt-0">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -176,8 +150,9 @@ export default function PrivateLibraryShelf({
                 </div>
             </div>
 
+            {/* Book Shelf */}
             {openState && (
-                <div className="overflow-x-auto mt-3">
+                <div className="mt-3 overflow-x-auto">
                     <div className="flex gap-4 pb-2 px-2">
                         {books.map((book) => (
                             <BookCard
@@ -187,9 +162,7 @@ export default function PrivateLibraryShelf({
                                 draggable
                                 onDragStart={() => onDragStart?.(book.id, categoryId || null)}
                                 onRemove={
-                                    onRemoveBook
-                                        ? () => onRemoveBook(book.id)
-                                        : undefined
+                                    onRemoveBook ? () => onRemoveBook(book.id) : undefined
                                 }
                                 currentCategoryId={categoryId}
                             />

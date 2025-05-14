@@ -213,11 +213,13 @@ export default function JournalPage() {
             {/* Floating Add Button */}
             <button
                 onClick={() => setShowModal(true)}
-                className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg"
+                className="fixed bottom-24 sm:bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg z-50"
                 title="Add Journal Entry"
             >
                 <FaPlus />
             </button>
+
+
 
             {/* Modal */}
             {showModal && (

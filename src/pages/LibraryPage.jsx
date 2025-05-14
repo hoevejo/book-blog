@@ -217,49 +217,53 @@ export default function PrivateLibraryPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4">
-            <div className="max-w-5xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-8 px-4 sm:px-6">
+            <div className="max-w-5xl mx-auto space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 className="text-3xl font-bold text-gray-800">📚 My Library</h1>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <button
                             onClick={() => setShowAddBookModal(true)}
-                            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                            className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full sm:w-auto"
                         >
                             <FaPlus /> Add Book
                         </button>
                         <button
                             onClick={() => setAddingCategory(true)}
-                            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                            className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full sm:w-auto"
                         >
                             <FaPlus /> Add Category
                         </button>
                     </div>
                 </div>
+
                 {addingCategory && (
-                    <div className="flex gap-2 mb-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         <input
                             type="text"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             placeholder="New category name"
-                            className="border px-3 py-2 rounded-md w-full"
+                            className="border px-3 py-2 rounded-md w-full sm:w-auto flex-grow"
                         />
-                        <button
-                            onClick={handleAddCategory}
-                            className="bg-green-600 text-white px-4 py-2 rounded-md"
-                        >
-                            Save
-                        </button>
-                        <button
-                            onClick={() => setAddingCategory(false)}
-                            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md"
-                        >
-                            Cancel
-                        </button>
+                        <div className="flex gap-2 mt-2 sm:mt-0">
+                            <button
+                                onClick={handleAddCategory}
+                                className="bg-green-600 text-white px-4 py-2 rounded-md"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => setAddingCategory(false)}
+                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 )}
-                {/* Status shelves */}
+
+                {/* Default Status Shelves */}
                 {defaultStatuses.map((status) => (
                     <PrivateLibraryShelf
                         key={status}
@@ -278,7 +282,7 @@ export default function PrivateLibraryPage() {
                     />
                 ))}
 
-                {/* Unassigned shelf */}
+                {/* Unassigned */}
                 <PrivateLibraryShelf
                     title="Unassigned Books"
                     books={unassignedBooks}
@@ -294,7 +298,7 @@ export default function PrivateLibraryPage() {
                     onRemoveBook={(bookId) => handleRemoveFromCategory(bookId, null)}
                 />
 
-                {/* Custom categories */}
+                {/* Custom Categories */}
                 {Object.entries(categories).map(([id, cat]) => (
                     <PrivateLibraryShelf
                         key={id}
