@@ -1,12 +1,9 @@
-// app/api/jobs/fetchNews/route.js
-
 import { NextResponse } from "next/server";
 import RSSParser from "rss-parser";
-import { db } from "@/lib/firebaseAdmin"; // your Firebase Admin SDK init
+import { db } from "@/lib/firebaseAdmin"; // points to the admin SDK setup
 
 const parser = new RSSParser();
 
-// Book news RSS feeds
 const feeds = [
   {
     url: "https://bookriot.com/feed/",
@@ -23,13 +20,13 @@ const feeds = [
 
 export async function GET() {
   try {
-    // 1. Clear existing articles
+    // 1. Clear previous news
     const snapshot = await db.collection("news").get();
     const batchDelete = db.batch();
     snapshot.forEach((doc) => batchDelete.delete(doc.ref));
     await batchDelete.commit();
 
-    // 2. Fetch new articles
+    // 2. Fetch and parse articles
     const articles = [];
 
     for (const feed of feeds) {
@@ -47,10 +44,10 @@ export async function GET() {
       }
     }
 
-    // 3. Store new articles
+    // 3. Save new articles
     const batchAdd = db.batch();
     for (const article of articles) {
-      const id = encodeURIComponent(article.url); // unique ID
+      const id = encodeURIComponent(article.url);
       const ref = db.collection("news").doc(id);
       batchAdd.set(ref, article, { merge: true });
     }
