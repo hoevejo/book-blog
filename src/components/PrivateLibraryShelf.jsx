@@ -152,20 +152,21 @@ export default function PrivateLibraryShelf({
 
             {/* Book Shelf */}
             {openState && (
-                <div className="mt-3 overflow-x-auto">
-                    <div className="flex gap-4 pb-2 px-2">
+                <div className="mt-3 overflow-x-auto -mx-2 px-2">
+                    <div className="flex gap-4 pb-2">
                         {books.map((book) => (
-                            <BookCard
-                                key={book.id}
-                                book={book}
-                                onClick={() => onBookClick(book)}
-                                draggable
-                                onDragStart={() => onDragStart?.(book.id, categoryId || null)}
-                                onRemove={
-                                    onRemoveBook ? () => onRemoveBook(book.id) : undefined
-                                }
-                                currentCategoryId={categoryId}
-                            />
+                            <div key={book.id} className="flex-shrink-0 w-40">
+                                <BookCard
+                                    book={book}
+                                    onClick={() => onBookClick(book)}
+                                    draggable
+                                    onDragStart={() => onDragStart?.(book.id, categoryId || null)}
+                                    onRemove={
+                                        onRemoveBook ? () => onRemoveBook(book.id) : undefined
+                                    }
+                                    currentCategoryId={categoryId}
+                                />
+                            </div>
                         ))}
                     </div>
                 </div>
