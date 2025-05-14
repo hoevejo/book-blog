@@ -210,14 +210,10 @@ export default function DiscoveryPage() {
                                     }`}
                             >
                                 {isGenerating ? (
-                                    <span className="flex items-center space-x-1">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                         <span>Generating</span>
-                                        <span className="flex">
-                                            <span className="animate-bounce-dot [animation-delay:-0.3s]">.</span>
-                                            <span className="animate-bounce-dot [animation-delay:-0.15s]">.</span>
-                                            <span className="animate-bounce-dot">.</span>
-                                        </span>
-                                    </span>
+                                    </div>
                                 ) : (
                                     "Generate Recommendations"
                                 )}
