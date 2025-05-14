@@ -52,8 +52,6 @@ export default function DiscoveryPage() {
         }
     };
 
-
-
     const buildPrompt = (type, input) => {
         switch (type) {
             case "new":
@@ -74,7 +72,6 @@ export default function DiscoveryPage() {
         const books = [];
 
         for (let line of lines) {
-            // Match format: "1. Title by Author - Summary"
             const match = line.match(/^\d+\.\s*(.*?)\s+by\s+(.*?)\s*[-–]\s*(.*)$/i);
             if (match) {
                 books.push({
@@ -94,69 +91,75 @@ export default function DiscoveryPage() {
         selectedType === "custom";
 
     return (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-4">📖 Discover Your Next Read</h1>
-            <p className="mb-6 text-gray-600">
-                Use our AI assistant to get personalized book recommendations based on your interests.
-            </p>
-
-            <div className="space-y-4 mb-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {promptTypes.map((pt) => (
-                        <button
-                            key={pt.id}
-                            className={`px-3 py-2 rounded border ${selectedType === pt.id
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-gray-700 border-gray-300"
-                                }`}
-                            onClick={() => {
-                                setSelectedType(pt.id);
-                                setUserInput("");
-                            }}
-                        >
-                            {pt.label}
-                        </button>
-                    ))}
+        <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-10 px-4">
+            <div className="max-w-3xl mx-auto space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                        📖 Discover Your Next Read
+                    </h1>
+                    <p className="text-gray-600">
+                        Use our AI assistant to get personalized book recommendations based on your interests.
+                    </p>
                 </div>
 
-                {needsInput && (
-                    <input
-                        type="text"
-                        placeholder={
-                            selectedType === "theme"
-                                ? "e.g. cozy fantasy"
-                                : selectedType === "similar"
-                                    ? "e.g. Mistborn"
-                                    : "Write anything you want..."
-                        }
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        className="w-full border px-4 py-2 rounded"
-                    />
+                <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {promptTypes.map((pt) => (
+                            <button
+                                key={pt.id}
+                                className={`px-3 py-2 rounded border text-sm ${selectedType === pt.id
+                                    ? "bg-indigo-600 text-white"
+                                    : "bg-white text-gray-700 border-gray-300"
+                                    }`}
+                                onClick={() => {
+                                    setSelectedType(pt.id);
+                                    setUserInput("");
+                                }}
+                            >
+                                {pt.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {needsInput && (
+                        <input
+                            type="text"
+                            placeholder={
+                                selectedType === "theme"
+                                    ? "e.g. cozy fantasy"
+                                    : selectedType === "similar"
+                                        ? "e.g. Mistborn"
+                                        : "Write anything you want..."
+                            }
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            className="w-full border px-4 py-2 rounded"
+                        />
+                    )}
+
+                    <button
+                        onClick={handleGenerate}
+                        className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
+                    >
+                        Generate Recommendations
+                    </button>
+                </div>
+
+                {cachedPrompt && (
+                    <div className="text-sm text-gray-500 italic">
+                        Showing cached results from your last prompt: "{cachedPrompt}"
+                    </div>
                 )}
 
-                <button
-                    onClick={handleGenerate}
-                    className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
-                >
-                    Generate Recommendations
-                </button>
-            </div>
-
-            {cachedPrompt && (
-                <div className="mb-4 text-sm text-gray-500 italic">
-                    Showing cached results from your last prompt: "{cachedPrompt}"
+                <div className="space-y-4">
+                    {recommendations.map((rec, idx) => (
+                        <div key={idx} className="bg-white border rounded-lg shadow p-4">
+                            <h3 className="text-lg font-semibold text-gray-800">{rec.title}</h3>
+                            <p className="text-sm text-gray-600 italic">by {rec.author}</p>
+                            <p className="text-sm mt-2 text-gray-700">{rec.summary}</p>
+                        </div>
+                    ))}
                 </div>
-            )}
-
-            <div className="space-y-4">
-                {recommendations.map((rec, idx) => (
-                    <div key={idx} className="border rounded p-4 shadow-sm bg-white">
-                        <h3 className="font-semibold text-lg">{rec.title}</h3>
-                        <p className="text-sm text-gray-600 italic">by {rec.author}</p>
-                        <p className="text-sm mt-2">{rec.summary}</p>
-                    </div>
-                ))}
             </div>
         </div>
     );
