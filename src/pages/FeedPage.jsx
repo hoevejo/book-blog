@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase"; // Adjust this if your firebase config is elsewhere
+import { db } from "../utils/firebaseConfig";; // Adjust this if your firebase config is elsewhere
 
 export default function FeedPage() {
     const [articles, setArticles] = useState([]);
