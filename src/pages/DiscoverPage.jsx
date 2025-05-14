@@ -16,19 +16,32 @@ export default function DiscoveryPage() {
     const [customRawOutput, setCustomRawOutput] = useState(null);
     const [cachedPrompt, setCachedPrompt] = useState(null);
     const [history, setHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
+    const [activeTab, setActiveTab] = useState("new"); // "new" or "history"
+    const [expandedPromptIndex, setExpandedPromptIndex] = useState(null);
 
     useEffect(() => {
         const recentHistory = cleanOldHistory();
         setHistory(recentHistory);
 
-        if (recentHistory.length && Date.now() - recentHistory[0].timestamp < 24 * 60 * 60 * 1000) {
+        if (
+            recentHistory.length &&
+            Date.now() - recentHistory[0].timestamp < 24 * 60 * 60 * 1000
+        ) {
             setCachedPrompt(recentHistory[0].promptSummary);
             setRecommendations(recentHistory[0].results || []);
-            setCustomRawOutput(recentHistory[0].type === "custom" ? recentHistory[0].raw : null);
+            setCustomRawOutput(
+                recentHistory[0].type === "custom" ? recentHistory[0].raw : null
+            );
         }
     }, []);
 
+    const cleanOldHistory = () => {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+        const cutoff = Date.now() - 36 * 60 * 60 * 1000; // 36 hours
+        const filtered = history.filter((entry) => entry.timestamp >= cutoff);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+        return filtered;
+    };
 
     const handleGenerate = async () => {
         const promptText = buildPrompt(selectedType, userInput);
@@ -50,7 +63,10 @@ export default function DiscoveryPage() {
                 promptSummary: promptText,
                 type: selectedType,
                 raw: data.result,
-                results: selectedType === "custom" ? null : parseAIResponse(data.result),
+                results:
+                    selectedType === "custom"
+                        ? null
+                        : parseAIResponse(data.result),
                 timestamp: Date.now(),
             };
 
@@ -60,7 +76,10 @@ export default function DiscoveryPage() {
 
             setCachedPrompt(promptText);
             setRecommendations(resultEntry.results || []);
-            setCustomRawOutput(selectedType === "custom" ? data.result : null);
+            setCustomRawOutput(
+                selectedType === "custom" ? data.result : null
+            );
+            setActiveTab("new");
         } catch (err) {
             console.error("❌ Recommendation error:", err);
             alert("Something went wrong: " + err.message);
@@ -99,13 +118,6 @@ export default function DiscoveryPage() {
 
         return books;
     };
-    const cleanOldHistory = () => {
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-        const cutoff = Date.now() - 36 * 60 * 60 * 1000; // 36 hours in ms
-        const filtered = history.filter(entry => entry.timestamp >= cutoff);
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
-        return filtered;
-    };
 
     const needsInput =
         selectedType === "theme" ||
@@ -124,100 +136,172 @@ export default function DiscoveryPage() {
                     </p>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {promptTypes.map((pt) => (
+                <div className="flex space-x-4">
+                    <button
+                        onClick={() => {
+                            setActiveTab("new");
+                            setExpandedPromptIndex(null);
+                        }}
+                        className={`px-4 py-2 rounded text-sm font-medium ${activeTab === "new"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-white text-gray-700 border border-gray-300"
+                            }`}
+                    >
+                        🧠 New Prompt
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("history")}
+                        className={`px-4 py-2 rounded text-sm font-medium ${activeTab === "history"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-white text-gray-700 border border-gray-300"
+                            }`}
+                    >
+                        📜 History
+                    </button>
+                </div>
+
+                {activeTab === "new" && (
+                    <>
+                        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {promptTypes.map((pt) => (
+                                    <button
+                                        key={pt.id}
+                                        className={`px-3 py-2 rounded border text-sm ${selectedType === pt.id
+                                            ? "bg-indigo-600 text-white"
+                                            : "bg-white text-gray-700 border-gray-300"
+                                            }`}
+                                        onClick={() => {
+                                            setSelectedType(pt.id);
+                                            setUserInput("");
+                                        }}
+                                    >
+                                        {pt.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {needsInput && (
+                                <input
+                                    type="text"
+                                    placeholder={
+                                        selectedType === "theme"
+                                            ? "e.g. cozy fantasy"
+                                            : selectedType === "similar"
+                                                ? "e.g. Mistborn"
+                                                : "Write anything you want..."
+                                    }
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    className="w-full border px-4 py-2 rounded"
+                                />
+                            )}
+
                             <button
-                                key={pt.id}
-                                className={`px-3 py-2 rounded border text-sm ${selectedType === pt.id
-                                    ? "bg-indigo-600 text-white"
-                                    : "bg-white text-gray-700 border-gray-300"
-                                    }`}
-                                onClick={() => {
-                                    setSelectedType(pt.id);
-                                    setUserInput("");
-                                }}
+                                onClick={handleGenerate}
+                                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
                             >
-                                {pt.label}
+                                Generate Recommendations
                             </button>
-                        ))}
-                    </div>
+                        </div>
 
-                    {needsInput && (
-                        <input
-                            type="text"
-                            placeholder={
-                                selectedType === "theme"
-                                    ? "e.g. cozy fantasy"
-                                    : selectedType === "similar"
-                                        ? "e.g. Mistborn"
-                                        : "Write anything you want..."
-                            }
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                            className="w-full border px-4 py-2 rounded"
-                        />
-                    )}
+                        {cachedPrompt && (
+                            <div className="text-sm text-gray-500 italic">
+                                Showing results for: "{cachedPrompt}"
+                            </div>
+                        )}
 
-                    <button
-                        onClick={handleGenerate}
-                        className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition"
-                    >
-                        Generate Recommendations
-                    </button>
-
-                    <button
-                        onClick={() => setShowHistory((prev) => !prev)}
-                        className="text-indigo-600 underline text-sm"
-                    >
-                        {showHistory ? "Hide Prompt History" : "Show Prompt History"}
-                    </button>
-                </div>
-
-                {cachedPrompt && (
-                    <div className="text-sm text-gray-500 italic">
-                        Showing results for: "{cachedPrompt}"
-                    </div>
+                        <div className="space-y-4">
+                            {customRawOutput ? (
+                                <pre className="whitespace-pre-wrap bg-white border rounded-lg shadow p-4 text-sm text-gray-800">
+                                    {customRawOutput}
+                                </pre>
+                            ) : (
+                                recommendations.map((rec, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="bg-white border rounded-lg shadow p-4"
+                                    >
+                                        <h3 className="text-lg font-semibold text-gray-800">
+                                            {rec.title}
+                                        </h3>
+                                        <p className="text-sm text-gray-600 italic">
+                                            by {rec.author}
+                                        </p>
+                                        <p className="text-sm mt-2 text-gray-700">
+                                            {rec.summary}
+                                        </p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </>
                 )}
 
-                {showHistory && (
-                    <div className="space-y-4 mt-4">
-                        {history.map((entry, idx) => (
-                            <div
-                                key={idx}
-                                className="p-4 border rounded bg-white cursor-pointer hover:bg-gray-50"
-                                onClick={() => {
-                                    setCachedPrompt(entry.promptSummary);
-                                    setRecommendations(entry.results || []);
-                                    setCustomRawOutput(entry.type === "custom" ? entry.raw : null);
-                                }}
-                            >
-                                <p className="text-sm text-gray-700 mb-1 font-medium">
-                                    {entry.promptSummary}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                    {new Date(entry.timestamp).toLocaleString()}
-                                </p>
-                            </div>
-                        ))}
+                {activeTab === "history" && (
+                    <div className="space-y-4">
+                        {history.length === 0 ? (
+                            <p className="text-gray-600 italic">
+                                No history yet. Try generating some prompts!
+                            </p>
+                        ) : (
+                            history.map((entry, idx) => {
+                                const isExpanded = expandedPromptIndex === idx;
+                                return (
+                                    <div
+                                        key={idx}
+                                        className="bg-white border rounded-lg shadow p-4"
+                                    >
+                                        <div
+                                            className="cursor-pointer flex justify-between items-center"
+                                            onClick={() =>
+                                                setExpandedPromptIndex(
+                                                    isExpanded ? null : idx
+                                                )
+                                            }
+                                        >
+                                            <p className="text-sm text-gray-800 font-medium">
+                                                {entry.promptSummary}
+                                            </p>
+                                            <span className="text-xs text-gray-400">
+                                                {new Date(
+                                                    entry.timestamp
+                                                ).toLocaleString()}
+                                            </span>
+                                        </div>
+
+                                        {isExpanded && (
+                                            <div className="mt-4">
+                                                {entry.type === "custom" ? (
+                                                    <pre className="whitespace-pre-wrap text-sm text-gray-800">
+                                                        {entry.raw}
+                                                    </pre>
+                                                ) : (
+                                                    entry.results.map((rec, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="border-t pt-3 mt-3 text-sm"
+                                                        >
+                                                            <h3 className="font-semibold text-gray-800">
+                                                                {rec.title}
+                                                            </h3>
+                                                            <p className="italic text-gray-600">
+                                                                by {rec.author}
+                                                            </p>
+                                                            <p className="mt-1 text-gray-700">
+                                                                {rec.summary}
+                                                            </p>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 )}
-
-                <div className="space-y-4">
-                    {customRawOutput ? (
-                        <pre className="whitespace-pre-wrap bg-white border rounded-lg shadow p-4 text-sm text-gray-800">
-                            {customRawOutput}
-                        </pre>
-                    ) : (
-                        recommendations.map((rec, idx) => (
-                            <div key={idx} className="bg-white border rounded-lg shadow p-4">
-                                <h3 className="text-lg font-semibold text-gray-800">{rec.title}</h3>
-                                <p className="text-sm text-gray-600 italic">by {rec.author}</p>
-                                <p className="text-sm mt-2 text-gray-700">{rec.summary}</p>
-                            </div>
-                        ))
-                    )}
-                </div>
             </div>
         </div>
     );
